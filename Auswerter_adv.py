@@ -32,43 +32,37 @@ def get_stats(target):
 create_folder("Ergebnisse")
 create_folder("Ergebnisse/Bilder")
 
-data = pd.read_csv("data_Mitarbeiter-Feedback_2018-09-13_10-31.csv", encoding='utf-16', sep = "\t", na_values=["nicht beantwortet", "nan", -9])
-meaning = pd.read_csv("values_Mitarbeiter-Feedback_2018-09-13_10-31.csv", encoding='utf-16', sep = "\t")
-questions = pd.read_csv("variables_Mitarbeiter-Feedback_2018-09-13_10-31.csv", encoding='utf-16', sep = "\t")  
-data = data.iloc[:,6:73]
+datalist = ["data_Mitarbeiter-Feedback_2018-09-13_10-31.csv",
+            "values_Mitarbeiter-Feedback_2018-09-13_10-31.csv",
+            "variables_Mitarbeiter-Feedback_2018-09-13_10-31.csv"]
 
-#%% Testgrafik
-
-#target = "PB01"
-def plot_bar(target):
-    printed = data.loc[:, target]
-    name = questions.loc[questions.VAR == printed.name, "QUESTION"].values[0]
-    sub_name = questions.loc[questions.VAR == printed.name, "LABEL"].values[0]
-    target = printed.value_counts()
-    meanings = meaning.loc[meaning.VAR == target.name, ["MEANING","RESPONSE"]]
-    meanings.index = meanings.RESPONSE
+def loadData(datalist):
+    data = pd.read_csv(datalist[0], encoding='utf-16', sep = "\t", na_values=["nicht beantwortet", "nan", -9])
+    answerCodes = pd.read_csv(datalist[1], encoding='utf-16', sep = "\t").set_index("VAR")
+    metaData = pd.read_csv(datalist[2], encoding='utf-16', sep = "\t").drop("INPUT",axis = 1).set_index("VAR")
+    meaninglist = dict()
     
-    target = pd.DataFrame(target).join(meanings, how = "left")
-    target.index = target.MEANING
-    target = target.drop("MEANING", axis = 1)
-    
-    plt.figure(figsize=(20,10))
-    plt.title(name)
-    plt.suptitle(sub_name)
-    plt.xlabel('Antworten')
-    plt.ylabel('Häufigkeit')
-    plt.xticks(rotation= 30)
-    
-    plt.bar(target.index, target.iloc[:,0])
-    plt.savefig('Ergebnisse/Bilder/' + str(data.loc[:, x].name) + '.png')
-    plt.clf()
-
-for x in data.columns:
-    try:
-        plot_bar(x)
-    except:
-        print("Fehler bei Grafik", x)
+    for variable in answerCodes.index.unique():
+        meaningDict = answerCodes.loc[answerCodes.index == variable,"RESPONSE":].set_index("RESPONSE").to_dict()
+        meaningDict[variable] = meaningDict.pop("MEANING")
+        meaninglist.update(meaningDict)
         
+    return metaData, data, meaninglist
+
+metaData, data, meaninglist = loadData(datalist)
+
+#%%
+
+with open ('Ergebnisse/Verteilung.txt', 'w') as log:
+    for variable in data.columns:
+        output = "{} - {} \n"
+        log.write(output.format(variable, 
+                                metaData.loc[variable,"QUESTION"]))
+
+
+#%%
+
+"""
 #%% Grafiken
 plt.figure(figsize=(20, 10))
 for x in data.columns:
@@ -90,3 +84,5 @@ with open ('Ergebnisse/Statistik.txt', 'w') as log:
         output = get_stats(x)[0], "\n",get_stats(x)[1], "\n",get_stats(x)[2], "\n+++++\n\n"
         for y in output:
             log.write(str(y))
+            
+ """
