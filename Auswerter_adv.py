@@ -68,6 +68,23 @@ def write_header(variable):
                            get_question(variable))
     return header
 
+def write_absolut_distribution(variable):
+    report = str(get_absolut_distribution(variable))
+    return report
+    
+def get_absolut_distribution(variable):
+    graph_data = data.loc[:,variable].value_counts()
+    meaning = pd.Series(numbersToTextDict[variable])
+    
+    result = pd.DataFrame([graph_data,meaning]).T
+    result.index = result.iloc[:,1]
+    result.index.name = variable
+    result = result.iloc[:,0]
+    result.index = result.index.fillna("-")
+    result = result.fillna(0, downcast="infer")
+    
+    return result
+
 def get_label(variable):
     label = metaData.loc[variable,"LABEL"] #I don´t know why this is necessary!
     return label
@@ -131,22 +148,8 @@ def create_barplot(variable):
     plt.savefig('Ergebnisse/Bilder/' + variable + '.png')
     plt.close()
     
-def write_absolut_distribution(variable):
-    report = str(get_absolut_distribution(variable))
-    return report
-    
-def get_absolut_distribution(variable):
-    graph_data = data.loc[:,variable].value_counts()
-    meaning = pd.Series(numbersToTextDict[variable])
-    
-    result = pd.DataFrame([graph_data,meaning]).T
-    result.index = result.iloc[:,1]
-    result.index.name = variable
-    result = result.iloc[:,0]
-    result.index = result.index.fillna("-")
-    result = result.fillna(0, downcast="infer")
-    
-    return result
+
+
 
 #%% Programm
 create_folder("Ergebnisse")
@@ -165,11 +168,13 @@ metaData = pd.read_csv(dataFileLocations[2], encoding='utf-16', sep = "\t").set_
 
 data, metaData = delete_uninteresting_variables(data, metaData)
 numbersToTextDict = create_numbersToTextDict()
-namedDataframe = create_named_dataframe()
+
 
 create_txt_report()
+create_barplots()
+
 #TODO: Make value report less ugly (top and bottom line)
 #TODO: Add number values to absolut distribution (otherwise you dont understand the mean and std)
-create_barplots()
+#TODO: Something is wrong with PB03, TE01_01, TB03_01
 
 print("Done!")
