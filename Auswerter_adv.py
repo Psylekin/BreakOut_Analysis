@@ -70,6 +70,8 @@ def write_header(variable):
 
 def write_absolut_distribution(variable):
     report = str(get_absolut_distribution(variable))
+    report = remove_last_line_from_string(report)
+    report = remove_first_line_from_string(report)
     return report
     
 def get_absolut_distribution(variable):
@@ -84,6 +86,12 @@ def get_absolut_distribution(variable):
     result = result.fillna(0, downcast="infer")
     
     return result
+
+def remove_last_line_from_string(string):
+    return string[:string.rfind('\n')]
+
+def remove_first_line_from_string(string):
+    return string[string.find('\n'):]
 
 def get_label(variable):
     label = metaData.loc[variable,"LABEL"] #I don´t know why this is necessary!
@@ -168,7 +176,6 @@ metaData = pd.read_csv(dataFileLocations[2], encoding='utf-16', sep = "\t").set_
 
 data, metaData = delete_uninteresting_variables(data, metaData)
 numbersToTextDict = create_numbersToTextDict()
-
 
 create_txt_report()
 create_barplots()
