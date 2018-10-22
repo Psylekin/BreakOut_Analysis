@@ -10,15 +10,14 @@ import os as os
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
-def create_report():
+def create_txt_report():
     with open ('Ergebnisse/Bericht.txt', 'w') as log:
         for variable in data.columns:
             try:
                 log.write(write_report_by_type(variable))
             except:
                 print("Fehler bei: "+variable)
-    print("I´m not finished")
+    print("Textreport created!")
     
 def write_report_by_type(variable):
     if gettype(variable) == "TEXT":
@@ -38,37 +37,61 @@ def gettype(variable):
     return type
 
 def write_text_report(variable):
-    report = 'Text report\n'
     report = write_header(variable)
-    for i, answer in enumerate(data.loc[:,variable].dropna()): #doesn´t show nans
+    for i, answer in enumerate(data.loc[:,variable].dropna()):
         report += "{}) {}\n".format(i,answer)
+    report += "\n"
     return report
 
 def write_ordinal_report(variable):
-    #Testing with BA01_01
     report = write_header(variable)
     report += report_mean_and_std(variable)
-    #report += report_value_meanings()
+    report += write_absolut_distribution(variable)
+    report += "\n\n"
     return report
 
 def write_nominal_report(variable):
-    report = 'Nominal report\n'
-    report += write_header(variable)
+    report = write_header(variable)
+    report += write_absolut_distribution(variable)
+    report += '\n\n'
     return report
 
 def write_dichotomous_report(variable):
-    report = 'Dichotomous report\n'
-    report += write_header(variable)
+    report = write_header(variable)
+    report += write_absolut_distribution(variable)
+    report += '\n\n'
     return report
 
 def write_header(variable):
-    header = "{}\n{}\n"
-    header = header.format(metaData.loc[variable,"LABEL"].encode('utf-8'), #I don´t know why this is necessary!
-                           metaData.loc[variable,"QUESTION"])
+    header = "{} - {}\n"
+    header = header.format(get_label(variable), 
+                           get_question(variable))
     return header
 
+def get_label(variable):
+    label = metaData.loc[variable,"LABEL"] #I don´t know why this is necessary!
+    return label
+
+def get_question(variable):
+    question = metaData.loc[variable,"QUESTION"]
+    return question
+
+def write_distribution(variable):
+    distribution = data.loc[:,variable].value_counts(sort=False)
+    report = str(distribution)+"\n\n"
+    return report
+
+def write_possible_values(variable):
+    possible_values = ""
+    
+    for values in numbersToTextDict[variable].items():
+        possible_values += "{}:\t{}\n".format(values[0],values[1])
+        
+    return possible_values
+
 def report_mean_and_std(variable):
-    report = "Mittelwert: {}\nStd: {}\n".format(get_mean(variable),get_std(variable))
+    report = "Mittelwert: {:03.2f}\nStd: {:03.2f}\n\n"
+    report = report.format(get_mean(variable),get_std(variable))
     return report
 
 def get_mean(variable):
@@ -81,14 +104,14 @@ def get_std(variable):
 
 def create_named_dataframe():
     namedDataframe = data.replace(numbersToTextDict)
-    
     return namedDataframe
     
 def create_numbersToTextDict():
     numbersToTextDict = dict()
     
     for variable in answerCodes.index.unique():
-        variable_meaning = answerCodes.loc[answerCodes.index == variable,"RESPONSE":].set_index("RESPONSE").to_dict()
+        variable_meaning = answerCodes.loc[answerCodes.index == variable,"RESPONSE":]
+        variable_meaning = variable_meaning.set_index("RESPONSE").to_dict()
         variable_meaning[variable] = variable_meaning.pop("MEANING")
         numbersToTextDict.update(variable_meaning)
         
@@ -102,8 +125,43 @@ def delete_uninteresting_variables(data, metaData):
 def create_folder(path):
     if not os.path.exists(path):
         os.makedirs(path)
+        
+def create_barplots():
+    for variable in metaData.loc[metaData.TYPE != 'TEXT',:].index:
+        try: 
+            create_barplot(variable)
+        except:
+            print("Fehler bei: " + variable)
+    print("Barplots created!")
 
-#%% Vorbereitung
+def create_barplot(variable):
+    absolutDistribution = get_absolut_distribution(variable)
+    
+    absolutDistribution.plot.bar(rot= 30, 
+                                 figsize=(18,10),
+                                 title = get_question(variable))
+    plt.suptitle(get_label(variable))
+    plt.savefig('Ergebnisse/Bilder/' + variable + '.png')
+    plt.close()
+    
+def write_absolut_distribution(variable):
+    report = str(get_absolut_distribution(variable))
+    return report
+    
+def get_absolut_distribution(variable):
+    graph_data = data.loc[:,variable].value_counts()
+    meaning = pd.Series(numbersToTextDict[variable])
+    
+    result = pd.DataFrame([graph_data,meaning]).T
+    result.index = result.iloc[:,1]
+    result.index.name = variable
+    result = result.iloc[:,0]
+    result.index = result.index.fillna("-")
+    result = result.fillna(0, downcast="infer")
+    
+    return result
+
+#%% Programm
 create_folder("Ergebnisse")
 create_folder("Ergebnisse/Bilder")
 
@@ -122,28 +180,9 @@ data, metaData = delete_uninteresting_variables(data, metaData)
 numbersToTextDict = create_numbersToTextDict()
 namedDataframe = create_named_dataframe()
 
-create_report()
-"""
-#%%
+create_txt_report()
+#TODO: Make value report less ugly (top and bottom line)
+#TODO: Add number values to absolut distribution (otherwise you dont understand the mean and std)
+create_barplots()
 
-with open ('Ergebnisse/Verteilung.txt', 'w') as log:
-    for variable in data.columns:
-        output = "{} - {} \n {} \n {} \n\n"
-        log.write(output.format(variable, 
-                                metaData.loc[variable,"LABEL"].encode('utf-8'), 
-                                metaData.loc[variable,"QUESTION"],
-                                data.loc[:,variable].value_counts().sort_index()))
-
-
-#%%
-
-
-#%% Grafiken
-plt.figure(figsize=(20, 10))
-for x in data.columns:
-    target = data.loc[:, x].value_counts().sort_index()
-    target.plot.bar(width=1, title=data.loc[:, x].name)
-    plt.savefig('Ergebnisse/Bilder/' + str(data.loc[:, x].name) + '.png')
-    plt.clf()
-            
- """
+print("Done!")
