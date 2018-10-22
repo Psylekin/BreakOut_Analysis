@@ -76,19 +76,6 @@ def get_question(variable):
     question = metaData.loc[variable,"QUESTION"]
     return question
 
-def write_distribution(variable):
-    distribution = data.loc[:,variable].value_counts(sort=False)
-    report = str(distribution)+"\n\n"
-    return report
-
-def write_possible_values(variable):
-    possible_values = ""
-    
-    for values in numbersToTextDict[variable].items():
-        possible_values += "{}:\t{}\n".format(values[0],values[1])
-        
-    return possible_values
-
 def report_mean_and_std(variable):
     report = "Mittelwert: {:03.2f}\nStd: {:03.2f}\n\n"
     report = report.format(get_mean(variable),get_std(variable))
