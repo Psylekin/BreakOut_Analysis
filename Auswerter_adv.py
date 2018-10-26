@@ -113,10 +113,6 @@ def get_mean(variable):
 def get_std(variable):
     std = data.loc[:,variable].std()
     return std
-
-def create_named_dataframe():
-    namedDataframe = data.replace(numbersToTextDict)
-    return namedDataframe
     
 def create_numbersToTextDict():
     numbersToTextDict = dict()
@@ -180,7 +176,6 @@ numbersToTextDict = create_numbersToTextDict()
 create_txt_report()
 create_barplots()
 
-#TODO: Make value report less ugly (top and bottom line)
 #TODO: Add number values to absolut distribution (otherwise you dont understand the mean and std)
 #TODO: Something is wrong with PB03, TE01_01, TB03_01
 
