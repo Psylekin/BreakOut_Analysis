@@ -75,16 +75,18 @@ def write_absolut_distribution(variable):
     return report
     
 def get_absolut_distribution(variable):
-    graph_data = data.loc[:,variable].value_counts()
+    distribution = data.loc[:,variable].value_counts()
     meaning = pd.Series(numbersToTextDict[variable])
     
-    result = pd.DataFrame([graph_data,meaning]).T
-    result.index = result.iloc[:,1]
+    result = pd.DataFrame([distribution, meaning]).T
+    #result.index = result.iloc[:,1]
     result.index.name = variable
-    result = result.iloc[:,0]
+    #result = result.iloc[:,0]
     result.index = result.index.fillna("-")
     result = result.fillna(0, downcast="infer")
-    
+
+#TODO: Change column order, than return, data is good, just the columns have to be named and changed
+
     return result
 
 def remove_last_line_from_string(string):
@@ -125,9 +127,12 @@ def create_numbersToTextDict():
         
     return numbersToTextDict
 
-def delete_uninteresting_variables(data, metaData):
-    data = data.iloc[:,6:-23]
-    metaData = metaData.iloc[6:-23,:]
+def delete_system_variables(data, metaData):
+    kriteria_for_deletion = list(metaData.loc[:,"INPUT"] != "SYSTEM")
+    
+    data = data.iloc[:,kriteria_for_deletion]
+    metaData = metaData.iloc[kriteria_for_deletion,:]
+    
     return data, metaData
 
 def create_folder(path):
@@ -168,15 +173,14 @@ na_values = ["nicht beantwortet", "nan", -9]
 
 data = pd.read_csv(dataFileLocations[0], encoding='utf-16', sep = "\t", na_values=na_values)
 answerCodes = pd.read_csv(dataFileLocations[1], encoding='utf-16', sep = "\t").set_index("VAR")
-metaData = pd.read_csv(dataFileLocations[2], encoding='utf-16', sep = "\t").set_index("VAR").drop("INPUT",axis = 1)
+metaData = pd.read_csv(dataFileLocations[2], encoding='utf-16', sep = "\t").set_index("VAR")
 
-data, metaData = delete_uninteresting_variables(data, metaData)
+data, metaData = delete_system_variables(data, metaData)
 numbersToTextDict = create_numbersToTextDict()
 
 create_txt_report()
 create_barplots()
 
-#TODO: Add number values to absolut distribution (otherwise you dont understand the mean and std)
-#TODO: Something is wrong with PB03, TE01_01, TB03_01
+#TODO: Something is wrong with TE01_01, TB03_01
 
 print("Done!")
