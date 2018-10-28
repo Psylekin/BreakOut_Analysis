@@ -12,16 +12,17 @@ import pandas as pd
 
 def create_txt_report():
     with open ('Ergebnisse/Bericht.txt', 'w') as log:
-        for variable in data.columns:
+        for variable in metaData.index:
             try:
                 log.write(write_report_by_type(variable))
-            except:
-                print("Fehler bei: "+variable)
+            except Exception as e:
+                errormassage = "Fehler bei: {}\n {}\n"
+                print(errormassage.format(variable, e))
     print("Textreport created!")
     
 def write_report_by_type(variable):
     if gettype(variable) == "TEXT":
-        report = write_text_report(variable)
+        report = write_text_report(variable) 
     elif gettype(variable) == "ORDINAL":
         report = write_ordinal_report(variable)
     elif gettype(variable) == "NOMINAL":
@@ -72,21 +73,18 @@ def write_absolut_distribution(variable):
     report = str(get_absolut_distribution(variable))
     report = remove_last_line_from_string(report)
     report = remove_first_line_from_string(report)
+        
     return report
-    
+
 def get_absolut_distribution(variable):
     distribution = data.loc[:,variable].value_counts()
     meaning = pd.Series(numbersToTextDict[variable])
     
-    result = pd.DataFrame([distribution, meaning]).T
-    #result.index = result.iloc[:,1]
-    result.index.name = variable
-    #result = result.iloc[:,0]
-    result.index = result.index.fillna("-")
-    result = result.fillna(0, downcast="infer")
-
-#TODO: Change column order, than return, data is good, just the columns have to be named and changed
-
+    result = pd.DataFrame(meaning).join(distribution, how = 'outer')
+    result.columns = ["meaning", "distribution"]
+    result.meaning = result.meaning.fillna('-')
+    result.distribution = result.distribution.fillna(0)
+    
     return result
 
 def remove_last_line_from_string(string):
@@ -96,7 +94,7 @@ def remove_first_line_from_string(string):
     return string[string.find('\n'):]
 
 def get_label(variable):
-    label = metaData.loc[variable,"LABEL"] #I don´t know why this is necessary!
+    label = metaData.loc[variable,"LABEL"] 
     return label
 
 def get_question(variable):
@@ -149,8 +147,9 @@ def create_barplots():
 
 def create_barplot(variable):
     absolutDistribution = get_absolut_distribution(variable)
+    absolutDistribution.index = absolutDistribution.meaning
     
-    absolutDistribution.plot.bar(rot= 30, 
+    absolutDistribution.distribution.plot.bar(rot= 30, 
                                  figsize=(18,10),
                                  title = get_question(variable))
     plt.suptitle(get_label(variable))
@@ -181,6 +180,6 @@ numbersToTextDict = create_numbersToTextDict()
 create_txt_report()
 create_barplots()
 
-#TODO: Something is wrong with TE01_01, TB03_01
+#TODO: Get SosciSurvey-Data in UTF-8 !!!
 
 print("Done!")
