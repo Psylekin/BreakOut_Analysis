@@ -156,30 +156,30 @@ def create_barplot(variable):
     plt.savefig('Ergebnisse/Bilder/' + variable + '.png')
     plt.close()
     
-
+def get_filename_of(searchstring):
+    for file in os.listdir():
+        if file.startswith(searchstring):
+            dataFileName = str(file)
+            
+    return dataFileName
 
 
 #%% Programm
 create_folder("Ergebnisse")
 create_folder("Ergebnisse/Bilder")
 
-dataFileLocations = [
-            "data_Mitarbeiter-Feedback_2018-09-13_10-31.csv",
-            "values_Mitarbeiter-Feedback_2018-09-13_10-31.csv",
-            "variables_Mitarbeiter-Feedback_2018-09-13_10-31.csv"]
-
 na_values = ["nicht beantwortet", "nan", -9]
 
-data = pd.read_csv(dataFileLocations[0], encoding='utf-16', sep = "\t", na_values=na_values)
-answerCodes = pd.read_csv(dataFileLocations[1], encoding='utf-16', sep = "\t").set_index("VAR")
-metaData = pd.read_csv(dataFileLocations[2], encoding='utf-16', sep = "\t").set_index("VAR")
+data = pd.read_csv(get_filename_of("data"), encoding='UTF-16', sep = "\t", na_values=na_values)
+answerCodes = pd.read_csv(get_filename_of("values"), encoding='UTF-16', sep = "\t").set_index("VAR")
+metaData = pd.read_csv(get_filename_of("variables"), encoding='UTF-16', sep = "\t").set_index("VAR")
 
 data, metaData = delete_system_variables(data, metaData)
 numbersToTextDict = create_numbersToTextDict()
 
 create_txt_report()
-create_barplots()
+#create_barplots()
 
-#TODO: Get SosciSurvey-Data in UTF-8 !!!
+#TODO: Transform texts like this .encode('UTF-16LE').decode('UTF-16')
 
 print("Done!")
